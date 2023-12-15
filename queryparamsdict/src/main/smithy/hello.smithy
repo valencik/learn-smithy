@@ -21,16 +21,26 @@ structure Person {
   @required
   name: String,
 
+  /// The various towns you like
   @httpQuery("town")
-  town: String
+  town: TownList
 
+  /// Arbitrary tags
   @httpQueryParams
   tags: MapOfStrings
 }
 
+list TownList {
+  member: String
+}
+
 map MapOfStrings {
     key: String
-    value: String
+    value: ListOfStrings
+}
+
+list ListOfStrings {
+    member: String
 }
 
 structure Greeting {

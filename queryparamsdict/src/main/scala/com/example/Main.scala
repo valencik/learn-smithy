@@ -14,8 +14,8 @@ import scala.concurrent.duration._
 object HelloWorldImpl extends HelloWorldService[IO] {
   def hello(
       name: String,
-      town: Option[String],
-      tags: Option[Map[String, String]]
+      town: Option[List[String]],
+      tags: Option[Map[String, List[String]]]
   ): IO[Greeting] = IO.pure {
     val tagStr = tags
       .map(m => m.toList.map(kv => s"${kv._1}: ${kv._2}").mkString(", "))
