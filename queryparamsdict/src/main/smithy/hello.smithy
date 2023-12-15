@@ -23,6 +23,14 @@ structure Person {
 
   @httpQuery("town")
   town: String
+
+  @httpQueryParams
+  tags: MapOfStrings
+}
+
+map MapOfStrings {
+    key: String
+    value: String
 }
 
 structure Greeting {

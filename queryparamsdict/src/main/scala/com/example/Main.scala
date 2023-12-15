@@ -12,10 +12,21 @@ import smithy4s.http4s.SimpleRestJsonBuilder
 import scala.concurrent.duration._
 
 object HelloWorldImpl extends HelloWorldService[IO] {
-  def hello(name: String, town: Option[String]): IO[Greeting] = IO.pure {
-    town match {
-      case None    => Greeting(s"Hello " + name + "!")
-      case Some(t) => Greeting(s"Hello " + name + " from " + t + "!")
+  def hello(
+      name: String,
+      town: Option[String],
+      tags: Option[Map[String, String]]
+  ): IO[Greeting] = IO.pure {
+    val tagStr = tags
+      .map(m => m.toList.map(kv => s"${kv._1}: ${kv._2}").mkString(", "))
+      .getOrElse("")
+    val msg = town match {
+      case None    => s"Hello " + name + "!"
+      case Some(t) => s"Hello " + name + " from " + t + "!"
+    }
+    tags match {
+      case None        => Greeting(msg)
+      case Some(value) => Greeting(s"$msg  $tagStr")
     }
   }
 }
