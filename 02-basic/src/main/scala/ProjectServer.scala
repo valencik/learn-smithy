@@ -49,7 +49,7 @@ object ProjectServiceImpl extends ProjectService[IO] {
   }
 }
 
-object RepoServer extends MainServer(ProjectService) {
+object ProjectServer extends MainServer(ProjectService) {
   val routes: Resource[IO, HttpRoutes[IO]] =
     SimpleRestJsonBuilder.routes(ProjectServiceImpl).resource
 }
