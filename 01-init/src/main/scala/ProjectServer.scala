@@ -16,26 +16,30 @@
 
 package com.example
 
-import learn.smithy._
+import learn.smithy.v01._
 
 import cats.effect._
 import org.http4s._
 import smithy4s.http4s.SimpleRestJsonBuilder
 
-object RepoServiceImpl extends RepoService[IO] {
+object ProjectServiceImpl extends ProjectService[IO] {
 
-  private val allRepos = List(Repo("cats"), Repo("cats-effect"))
-  def repoSearch(
+  private val allProjects = List(
+    Project("cats"),
+    Project("cats-effect")
+  )
+  def projectSearch(
       name: Option[String]
   ): IO[SearchResult] = IO.pure {
     name match {
-      case None        => SearchResult(allRepos)
-      case Some(nameQ) => SearchResult(allRepos.filter(r => r.name == nameQ))
+      case None => SearchResult(allProjects)
+      case Some(titleQ) =>
+        SearchResult(allProjects.filter(r => r.title == titleQ))
     }
   }
 }
 
-object RepoServer extends MainServer(RepoService) {
+object ProjectServer extends MainServer(ProjectService) {
   val routes: Resource[IO, HttpRoutes[IO]] =
-    SimpleRestJsonBuilder.routes(RepoServiceImpl).resource
+    SimpleRestJsonBuilder.routes(ProjectServiceImpl).resource
 }
