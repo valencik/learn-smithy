@@ -24,7 +24,7 @@ val ip4sVersion = "3.4.0"
 val logbackVersion = "1.4.14"
 val scribeVersion = "3.13.0"
 
-lazy val root = tlCrossRootProject.aggregate(common, init)
+lazy val root = tlCrossRootProject.aggregate(common, init, basic)
 
 lazy val common = (project in file("00-common/"))
   .settings(
@@ -46,6 +46,22 @@ lazy val common = (project in file("00-common/"))
   )
 
 lazy val init = (project in file("01-init/"))
+  .enablePlugins(Smithy4sCodegenPlugin)
+  .dependsOn(common)
+  .settings(
+    name := "01-init",
+    libraryDependencies ++= Seq(
+      "com.disneystreaming.smithy4s" %% "smithy4s-core" % smithy4sVersion.value,
+      "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % smithy4sVersion.value,
+      "org.http4s" %% "http4s-core" % http4sVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectVersion,
+      "org.typelevel" %% "cats-effect-kernel" % catsEffectVersion
+    ),
+    Compile / run / fork := true,
+    Compile / run / connectInput := true
+  )
+
+lazy val basic = (project in file("02-basic/"))
   .enablePlugins(Smithy4sCodegenPlugin)
   .dependsOn(common)
   .settings(
