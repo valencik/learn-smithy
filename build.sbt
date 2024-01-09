@@ -1,5 +1,19 @@
+ThisBuild / organization := "fff.pink"
+ThisBuild / organizationName := "Andrew Valencik"
+ThisBuild / startYear := Some(2023)
+ThisBuild / licenses := Seq(License.Apache2)
+ThisBuild / developers := List(
+  tlGitHubDev("valencik", "Andrew Valencik")
+)
+
+// do not publish artifacts
+ThisBuild / githubWorkflowPublishTargetBranches := Seq()
+
+// use JDK 17
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
+
+ThisBuild / tlBaseVersion := "0.0"
 ThisBuild / scalaVersion := "2.13.12"
-ThisBuild / version := "0.1.0-SNAPSHOT"
 
 val caseInsensitiveVersion = "1.4.0"
 val catsEffectVersion = "3.5.2"
