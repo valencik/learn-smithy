@@ -29,9 +29,9 @@ object ProjectServiceImpl extends ProjectService[IO] {
     Project("cats-effect")
   )
   def projectSearch(
-      name: Option[String]
+      title: Option[String]
   ): IO[SearchResult] = IO.pure {
-    name match {
+    title match {
       case None => SearchResult(allProjects)
       case Some(titleQ) =>
         SearchResult(allProjects.filter(r => r.title == titleQ))
