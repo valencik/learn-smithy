@@ -37,7 +37,7 @@ abstract class MainServer(service: HasId) extends IOApp.Simple {
       Logger.httpRoutes(logHeaders = false, logBody = true)(repos) <+> docs
     )
 
-  val run = routes()
+  def run = allRoutes()
     .flatMap { routes =>
       val thePort = port"9000"
       val theHost = host"localhost"

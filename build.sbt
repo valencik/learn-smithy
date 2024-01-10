@@ -34,7 +34,7 @@ lazy val common = (project in file("00-common/"))
       "com.comcast" %% "ip4s-core" % ip4sVersion,
       "com.disneystreaming.smithy4s" %% "smithy4s-core" % smithy4sVersion.value,
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s-swagger" % smithy4sVersion.value,
-      "com.outr" %% "scribe-slf4j2" % scribeVersion % Runtime,
+      "com.outr" %% "scribe-slf4j2" % scribeVersion,
       "org.http4s" %% "http4s-core" % http4sVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
       "org.http4s" %% "http4s-server" % http4sVersion,
