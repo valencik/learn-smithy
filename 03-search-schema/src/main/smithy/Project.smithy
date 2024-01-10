@@ -8,16 +8,17 @@ structure Project {
 
   /// The title of the project
   @required
-  @searchOptions(fieldType: "keyword")
+  @keywordField
   title: String
 
   /// The description of the repository
   @required
-  @searchOptions(fieldType: "text")
+  @textField(name: "description")
   description: String
 
   /// The github url of the repository
   @required
+  @keywordField(name: "url")
   github: String
 
   /// Whether or not the project is an affiliate project, false by default

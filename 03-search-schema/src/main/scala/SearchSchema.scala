@@ -42,6 +42,7 @@ object SearchSchema {
   def apply[A](
       fullSchema: Schema[A]
   ): SearchSchema[A] = {
+    // Split the Schema into parts, those with SearchOption annotations, and those without
     fullSchema.partition(isSearchField) match {
       case NoMatch()                             => Empty(fullSchema)
       case SplittingMatch(matching, notMatching) => Split(matching, notMatching)
@@ -49,9 +50,8 @@ object SearchSchema {
     }
   }
 
-  def isSearchField(field: Field[_, _]): Boolean = SearchSchemaBinding
-    .fromHints(field.memberHints)
-    .isDefined
+  def isSearchField(field: Field[_, _]): Boolean =
+    SearchSchemaBinding.fromHints(field.label, field.memberHints).isDefined
 }
 
 sealed abstract class SearchSchemaBinding(val tpe: SearchSchemaBinding.Type)
@@ -59,44 +59,62 @@ sealed abstract class SearchSchemaBinding(val tpe: SearchSchemaBinding.Type)
     with Serializable {
 
   def show: String = this match {
-    case SearchSchemaBinding.FieldTypeBinding(ft) => s"FieldType $ft"
+    case SearchSchemaBinding.KeywordFieldTypeBinding(fn) => s"KeywordField $fn"
+    case SearchSchemaBinding.TextFieldTypeBinding(fn)    => s"TextField $fn"
   }
 }
 object SearchSchemaBinding extends ShapeTag.Companion[SearchSchemaBinding] {
-  val id: ShapeId = ShapeId("learn.smithy.v03", "FieldTypeBinding")
+  val id: ShapeId = ShapeId("learn.smithy.v03", "SearchSchemaBinding")
 
   sealed trait Type
   object Type {
-    case object FieldType extends Type
+    case object KeywordFieldType extends Type
+    case object TextFieldType extends Type
   }
 
-  case class FieldTypeBinding(fieldType: String)
-      extends SearchSchemaBinding(Type.FieldType)
-  object FieldTypeBinding {
-    val schema: Schema[FieldTypeBinding] =
-      struct(string.required[FieldTypeBinding]("fieldType", _.fieldType))(
-        FieldTypeBinding.apply
+  case class KeywordFieldTypeBinding(name: String)
+      extends SearchSchemaBinding(Type.KeywordFieldType)
+  object KeywordFieldTypeBinding {
+    val schema: Schema[KeywordFieldTypeBinding] =
+      struct(string.required[KeywordFieldTypeBinding]("name", _.name))(
+        KeywordFieldTypeBinding.apply
+      )
+  }
+
+  case class TextFieldTypeBinding(name: String)
+      extends SearchSchemaBinding(Type.TextFieldType)
+  object TextFieldTypeBinding {
+    val schema: Schema[TextFieldTypeBinding] =
+      struct(string.required[TextFieldTypeBinding]("name", _.name))(
+        TextFieldTypeBinding.apply
       )
   }
 
   implicit val schema: Schema[SearchSchemaBinding] = {
-    val fieldType =
-      FieldTypeBinding.schema.oneOf[SearchSchemaBinding]("fieldType")
-    union(fieldType) { case _: FieldTypeBinding =>
-      0
+    val keywordType =
+      KeywordFieldTypeBinding.schema.oneOf[SearchSchemaBinding]("keywordField")
+    val textType =
+      TextFieldTypeBinding.schema.oneOf[SearchSchemaBinding]("textField")
+    union(keywordType, textType) {
+      case _: KeywordFieldTypeBinding => 0
+      case _: TextFieldTypeBinding    => 1
     }
   }
 
   def fromHints(
-      // field: String,
+      field: String,
       fieldHints: Hints
       // shapeHints: Hints
   ): Option[SearchSchemaBinding] = {
-    val res = fieldHints
-      .get(SearchOptions)
-      .map(so => FieldTypeBinding(so.fieldType.name))
-    println(s"+++ SearchSchema.fromHints, hints: $fieldHints")
-    println(s"+++ SearchSchema.fromHints, result: $res")
+    val keyword = fieldHints
+      .get(KeywordField)
+      .map(f => KeywordFieldTypeBinding(f.name.getOrElse(field)))
+    val text = fieldHints
+      .get(TextField)
+      .map(f => TextFieldTypeBinding(f.name.getOrElse(field)))
+    val res = keyword orElse text
+    println(s"+++ SearchSchema.fromHints($field), hints: $fieldHints")
+    println(s"+++ SearchSchema.fromHints($field), result: $res")
     res
   }
 
