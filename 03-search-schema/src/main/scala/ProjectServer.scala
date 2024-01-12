@@ -58,12 +58,6 @@ object ProjectServiceImpl extends ProjectService[IO] {
 // }
 
 object ProjectTest extends IOApp.Simple {
-  val x = SearchSchema(Project.schema) match {
-    case Empty(schema)  => s"Got an empty SearchSchema: $schema"
-    case Fields(schema) => s"Got a Fields SearchSchema: $schema"
-    case Split(matching, notMatching) =>
-      s"Got a Split Fields SearchSchema\n -- matching: $matching \n\n --notMatching: $notMatching"
-  }
-
-  val run = IO.println(x)
+  val x = Project.schema.compile(SearchFieldList)(Set.empty)._2
+  val run = IO.println("hi...") *> IO.println(x)
 }
