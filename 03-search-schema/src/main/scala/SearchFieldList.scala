@@ -16,7 +16,6 @@
 
 package com.example
 
-import learn.smithy.v03._
 import smithy4s.schema.Schema
 import smithy4s.Hints
 import smithy4s.ShapeId
@@ -44,21 +43,53 @@ import smithy4s.schema.Primitive.PString
 //  Set[ShapeId] => (Set[ShapeId], A)
 // And then vary the `A` based on what you're trying to build from the Schema.
 
-final case class SearchField(name: String, tpe: String) {}
+sealed trait SearchField {
+  val name: Option[String]
+
+  def defaultName(default: String): SearchField
+}
 object SearchField {
-  def fromHints[P](hints: Hints, primitive: Primitive[P]): SearchField =
-    // TODO from the Hints get the name and type
+  case class KeywordField(name: Option[String]) extends SearchField {
+    def defaultName(default: String): KeywordField =
+      copy(name = name orElse (Some(default)))
+  }
+  case class TextField(name: Option[String]) extends SearchField {
+    def defaultName(default: String): TextField =
+      copy(name = name orElse (Some(default)))
+  }
+
+  // def fromHints[P](hints: Hints, primitive: Primitive[P]): Option[SearchField] = {
+  // TODO from the Hints get the name and type
+  def fromHints(
+      fieldHints: Hints
+  ): Option[SearchField] = {
+    val keyword = fieldHints
+      .get(learn.smithy.v03.KeywordField)
+      // .map(f => KeywordField(f.name.getOrElse(field)))
+      .map(f => KeywordField(f.name))
+    val text = fieldHints
+      .get(learn.smithy.v03.TextField)
+      .map(f => TextField(f.name))
+    keyword orElse text
+  }
+
+  def fromPrimitive[P](
+      hints: Hints,
+      primitive: Primitive[P]
+  ): Option[SearchField] = {
     primitive match {
-      case PString => SearchField("nameFromHint", "keyword")
-      case _ =>
-        SearchField(
-          "nameFromHint",
-          "bad, we don't support this"
-        ) // we don't support anything but strings yet
+      case PString => fromHints(hints)
+      case p => {
+        println(s"fromPrimitive, hit primitive we don't support: $p")
+        None
+      }
     }
-  def fromHints[E](hints: Hints, values: List[EnumValue[E]]): SearchField =
-    // TODO from the Hints get the name and type
-    SearchField("nameFromEnumHint", values.map(_.stringValue).mkString(","))
+  }
+
+  def fromEnum[E](
+      hints: Hints,
+      values: List[EnumValue[E]]
+  ): Option[SearchField] = None
 }
 
 trait SearchFieldList[A]
@@ -73,14 +104,18 @@ trait SearchFieldList[A]
 }
 object SearchFieldList extends SchemaVisitor[SearchFieldList] { self =>
 
-  def of[A](shapeId: ShapeId, value: SearchField): SearchFieldList[A] =
-    s => (s + shapeId, value :: Nil)
+  def of[A](shapeId: ShapeId, value: Option[SearchField]): SearchFieldList[A] =
+    s => (s + shapeId, value.toList)
   def primitive[P](
       shapeId: ShapeId,
       hints: Hints,
       tag: Primitive[P]
-  ): SearchFieldList[P] =
-    SearchFieldList.of(shapeId, SearchField.fromHints(hints, tag))
+  ): SearchFieldList[P] = {
+    // We don't have any naming information here
+    // println(s"primitive $shapeId, tag: $tag, with hints: $hints")
+    // SearchFieldList.of(shapeId, SearchField.fromHints(hints))
+    SearchFieldList.of(shapeId, SearchField.fromPrimitive(hints, tag))
+  }
 
   def collection[C[_], A](
       shapeId: ShapeId,
@@ -104,7 +139,7 @@ object SearchFieldList extends SchemaVisitor[SearchFieldList] { self =>
       values: List[EnumValue[E]],
       total: E => EnumValue[E]
   ): SearchFieldList[E] =
-    SearchFieldList.of(shapeId, SearchField.fromHints(hints, values))
+    SearchFieldList.of(shapeId, SearchField.fromHints(hints))
 
   def struct[S](
       shapeId: ShapeId,
@@ -115,15 +150,17 @@ object SearchFieldList extends SchemaVisitor[SearchFieldList] { self =>
     // We're going to iterate over the `fields: Vector[Field[S, _]]` and call this
     def forField[T](
         sf: Field[S, T]
-    ): (String, (Set[ShapeId], List[SearchField])) = {
-      apply(sf.schema)(seen)
-      sf.label -> apply(sf.schema)(seen)
+    ): (Set[ShapeId], List[SearchField]) = {
+      // println(s"forField label: ${sf.label}")
+      // We want to use this label if the SearchField label is None
+      val (shapes, sfs) = apply(sf.schema)(seen)
+      (shapes, sfs.map(f => f.defaultName(sf.label)))
     }
     val (shapesFinal, res) = fields
       // .foldLeft((Set.empty[ShapeId], Seq.empty[(String, List[SearchField])])) {
       .foldLeft((Set.empty[ShapeId], List.empty[SearchField])) {
         case ((shapes, fieldDesc), field) =>
-          val (label, (s2, desc)) = forField(field)
+          val (s2, desc) = forField(field)
           (shapes ++ s2, fieldDesc ++ desc)
       }
     (seen ++ shapesFinal, res)

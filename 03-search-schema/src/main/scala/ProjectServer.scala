@@ -58,6 +58,9 @@ object ProjectServiceImpl extends ProjectService[IO] {
 // }
 
 object ProjectTest extends IOApp.Simple {
-  val x = Project.schema.compile(SearchFieldList)(Set.empty)._2
-  val run = IO.println("hi...") *> IO.println(x)
+  val fieldList: List[SearchField] =
+    Project.schema.compile(SearchFieldList)(Set.empty)._2
+
+  val line = IO.println("+++++" * 10)
+  val run = line *> IO.println(fieldList.mkString("\n")) *> line
 }
