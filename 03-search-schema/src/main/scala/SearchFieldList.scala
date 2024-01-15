@@ -58,43 +58,18 @@ object SearchField {
       copy(name = name orElse (Some(default)))
   }
 
-  // def fromHints[P](hints: Hints, primitive: Primitive[P]): Option[SearchField] = {
-  // TODO from the Hints get the name and type
-  def fromHints(
-      fieldHints: Hints
-  ): Option[SearchField] = {
+  def fromHints(fieldHints: Hints): Option[SearchField] = {
     val keyword = fieldHints
       .get(learn.smithy.v03.KeywordField)
-      // .map(f => KeywordField(f.name.getOrElse(field)))
       .map(f => KeywordField(f.name))
     val text = fieldHints
       .get(learn.smithy.v03.TextField)
       .map(f => TextField(f.name))
     keyword orElse text
   }
-
-  def fromPrimitive[P](
-      hints: Hints,
-      primitive: Primitive[P]
-  ): Option[SearchField] = {
-    primitive match {
-      case PString => fromHints(hints)
-      case p => {
-        println(s"fromPrimitive, hit primitive we don't support: $p")
-        None
-      }
-    }
-  }
-
-  def fromEnum[E](
-      hints: Hints,
-      values: List[EnumValue[E]]
-  ): Option[SearchField] = None
 }
 
-trait SearchFieldList[A]
-    extends (Set[ShapeId] => (Set[ShapeId], List[SearchField])) {
-  // helpers
+trait SearchFieldList[A] extends (Set[ShapeId] => (Set[ShapeId], List[SearchField])) {
   def mapResult[B](
       f: List[SearchField] => List[SearchField]
   ): SearchFieldList[B] = { seen =>
@@ -106,15 +81,21 @@ object SearchFieldList extends SchemaVisitor[SearchFieldList] { self =>
 
   def of[A](shapeId: ShapeId, value: Option[SearchField]): SearchFieldList[A] =
     s => (s + shapeId, value.toList)
-  def primitive[P](
-      shapeId: ShapeId,
-      hints: Hints,
-      tag: Primitive[P]
-  ): SearchFieldList[P] = {
+
+  def empty[A](shapeId: ShapeId): SearchFieldList[A] =
+    s => (s + shapeId, Nil)
+
+  def primitive[P](shapeId: ShapeId, hints: Hints, tag: Primitive[P]): SearchFieldList[P] = {
     // We don't have any naming information here
-    // println(s"primitive $shapeId, tag: $tag, with hints: $hints")
-    // SearchFieldList.of(shapeId, SearchField.fromHints(hints))
-    SearchFieldList.of(shapeId, SearchField.fromPrimitive(hints, tag))
+    println(s"visited primitive with shape $shapeId")
+    val searchField = tag match {
+      case PString => SearchField.fromHints(hints)
+      case p => {
+        println(s"fromPrimitive, hit primitive we don't support: $p")
+        None
+      }
+    }
+    SearchFieldList.of(shapeId, searchField)
   }
 
   def collection[C[_], A](
@@ -122,15 +103,18 @@ object SearchFieldList extends SchemaVisitor[SearchFieldList] { self =>
       hints: Hints,
       tag: CollectionTag[C],
       member: Schema[A]
-  ): SearchFieldList[C[A]] =
+  ): SearchFieldList[C[A]] = {
+    // Hit when SchemaVisitor encounters a collection (e.g. a list of strings)
+    println(s"visited collection with shape $shapeId")
     apply(member).mapResult(identity)
+  }
 
   def map[K, V](
       shapeId: ShapeId,
       hints: Hints,
       key: Schema[K],
       value: Schema[V]
-  ): SearchFieldList[Map[K, V]] = ???
+  ): SearchFieldList[Map[K, V]] = SearchFieldList.empty(shapeId)
 
   def enumeration[E](
       shapeId: ShapeId,
@@ -138,8 +122,10 @@ object SearchFieldList extends SchemaVisitor[SearchFieldList] { self =>
       tag: EnumTag[E],
       values: List[EnumValue[E]],
       total: E => EnumValue[E]
-  ): SearchFieldList[E] =
+  ): SearchFieldList[E] = {
+    println(s"visited enumeration with shape $shapeId")
     SearchFieldList.of(shapeId, SearchField.fromHints(hints))
+  }
 
   def struct[S](
       shapeId: ShapeId,
@@ -147,15 +133,15 @@ object SearchFieldList extends SchemaVisitor[SearchFieldList] { self =>
       fields: Vector[Field[S, _]],
       make: IndexedSeq[Any] => S
   ): SearchFieldList[S] = { seen =>
+    println(s"visited struct with shape $shapeId")
     // We're going to iterate over the `fields: Vector[Field[S, _]]` and call this
-    def forField[T](
-        sf: Field[S, T]
-    ): (Set[ShapeId], List[SearchField]) = {
+    def forField[T](sf: Field[S, T]): (Set[ShapeId], List[SearchField]) = {
       // println(s"forField label: ${sf.label}")
       // We want to use this label if the SearchField label is None
       val (shapes, sfs) = apply(sf.schema)(seen)
       (shapes, sfs.map(f => f.defaultName(sf.label)))
     }
+
     val (shapesFinal, res) = fields
       // .foldLeft((Set.empty[ShapeId], Seq.empty[(String, List[SearchField])])) {
       .foldLeft((Set.empty[ShapeId], List.empty[SearchField])) {
@@ -171,17 +157,11 @@ object SearchFieldList extends SchemaVisitor[SearchFieldList] { self =>
       hints: Hints,
       alternatives: Vector[Alt[U, _]],
       dispatch: Alt.Dispatcher[U]
-  ): SearchFieldList[U] = ???
+  ): SearchFieldList[U] = SearchFieldList.empty(shapeId)
 
-  def biject[A, B](
-      schema: Schema[A],
-      bijection: Bijection[A, B]
-  ): SearchFieldList[B] = ???
+  def biject[A, B](schema: Schema[A], bijection: Bijection[A, B]): SearchFieldList[B] = ???
 
-  def refine[A, B](
-      schema: Schema[A],
-      refinement: Refinement[A, B]
-  ): SearchFieldList[B] = ???
+  def refine[A, B](schema: Schema[A], refinement: Refinement[A, B]): SearchFieldList[B] = ???
 
   def lazily[A](suspend: Lazy[Schema[A]]): SearchFieldList[A] =
     // catch recursion here
@@ -190,5 +170,3 @@ object SearchFieldList extends SchemaVisitor[SearchFieldList] { self =>
   def option[A](schema: Schema[A]): SearchFieldList[Option[A]] = ???
 
 }
-
-//object SearchFieldList extends SchemaVisitor[FieldList] {
