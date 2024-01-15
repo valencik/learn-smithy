@@ -61,6 +61,8 @@ object ProjectTest extends IOApp.Simple {
   val fieldList: List[SearchField] =
     Project.schema.compile(SearchFieldList)(Set.empty)._2
 
+  val x = Project.schema.compile(PrinterSchemaVisitor)(Set.empty)._2
+
   val line = IO.println("+++++" * 10)
-  val run = line *> IO.println(fieldList.mkString("\n")) *> line
+  val run = line *> IO.println(fieldList.mkString("\n")) *> line *> IO.println(x) *> line
 }
