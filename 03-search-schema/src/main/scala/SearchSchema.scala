@@ -81,8 +81,7 @@ object SearchSchemaBinding extends ShapeTag.Companion[SearchSchemaBinding] {
       )
   }
 
-  case class TextFieldTypeBinding(name: String)
-      extends SearchSchemaBinding(Type.TextFieldType)
+  case class TextFieldTypeBinding(name: String) extends SearchSchemaBinding(Type.TextFieldType)
   object TextFieldTypeBinding {
     val schema: Schema[TextFieldTypeBinding] =
       struct(string.required[TextFieldTypeBinding]("name", _.name))(

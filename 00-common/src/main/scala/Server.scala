@@ -33,9 +33,7 @@ abstract class MainServer(service: HasId) extends IOApp.Simple {
     smithy4s.http4s.swagger.docs[IO](service)
 
   def allRoutes(): Resource[IO, HttpRoutes[IO]] =
-    routes().map(repos =>
-      Logger.httpRoutes(logHeaders = false, logBody = true)(repos) <+> docs
-    )
+    routes().map(repos => Logger.httpRoutes(logHeaders = false, logBody = true)(repos) <+> docs)
 
   def run = allRoutes()
     .flatMap { routes =>
