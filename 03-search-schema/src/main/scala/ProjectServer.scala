@@ -19,11 +19,6 @@ package com.example
 import learn.smithy.v03._
 
 import cats.effect._
-import org.http4s._
-import smithy4s.http4s.SimpleRestJsonBuilder
-import com.example.SearchSchema.Empty
-import com.example.SearchSchema.Fields
-import com.example.SearchSchema.Split
 
 object ProjectServiceImpl extends ProjectService[IO] {
 
