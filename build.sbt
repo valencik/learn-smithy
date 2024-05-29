@@ -24,7 +24,7 @@ val ip4sVersion = "3.5.0"
 val logbackVersion = "1.4.14"
 val scribeVersion = "3.13.5"
 
-lazy val root = tlCrossRootProject.aggregate(common, init, basic, searchSchema)
+lazy val root = tlCrossRootProject.aggregate(common, init, basic, searchSchema, nestedStructs)
 
 lazy val common = (project in file("00-common/"))
   .settings(
@@ -88,6 +88,21 @@ lazy val searchSchema = (project in file("03-search-schema/"))
       "org.http4s" %% "http4s-core" % http4sVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
       "org.typelevel" %% "cats-effect-kernel" % catsEffectVersion
+    ),
+    Compile / run / fork := true,
+    Compile / run / connectInput := true
+  )
+
+lazy val nestedStructs = (project in file("04-nested-structs/"))
+  .enablePlugins(Smithy4sCodegenPlugin)
+  .dependsOn(common)
+  .settings(
+    name := "01-init",
+    libraryDependencies ++= Seq(
+      "com.disneystreaming.smithy4s" %% "smithy4s-core" % smithy4sVersion.value,
+      "org.typelevel" %% "cats-effect" % catsEffectVersion,
+      "org.typelevel" %% "cats-effect-kernel" % catsEffectVersion,
+      "com.lihaoyi" %% "pprint" % "0.9.0"
     ),
     Compile / run / fork := true,
     Compile / run / connectInput := true
