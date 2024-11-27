@@ -13,16 +13,16 @@ ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 
 ThisBuild / tlBaseVersion := "0.0"
-ThisBuild / scalaVersion := "2.13.14"
+ThisBuild / scalaVersion := "2.13.15"
 
-val caseInsensitiveVersion = "1.4.0"
-val catsEffectVersion = "3.5.4"
+val caseInsensitiveVersion = "1.4.2"
+val catsEffectVersion = "3.5.7"
 val catsVersion = "2.12.0"
-val fs2Version = "3.10.2"
-val http4sVersion = "0.23.27"
-val ip4sVersion = "3.5.0"
+val fs2Version = "3.11.0"
+val http4sVersion = "0.23.29"
+val ip4sVersion = "3.6.0"
 val logbackVersion = "1.4.14"
-val scribeVersion = "3.13.5"
+val scribeVersion = "3.15.2"
 
 lazy val root = tlCrossRootProject.aggregate(common, init, basic, searchSchema, nestedStructs)
 
