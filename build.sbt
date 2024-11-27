@@ -9,6 +9,9 @@ ThisBuild / developers := List(
 // do not publish artifacts
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
+// do not submit dependencies
+ThisBuild / tlCiDependencyGraphJob := false
+
 // use JDK 17
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
 
